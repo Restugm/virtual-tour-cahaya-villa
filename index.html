@@ -149,7 +149,7 @@
             Pilihan ideal bagi wisatawan yang mencari keseimbangan antara kenyamanan modern, keindahan alam, dan pengalaman menginap yang tak terlupakan di Garut.
           </p>
           <div class="mt-8">
-            <a href="VirtualTourCahayaVilla/index.htm" class="inline-flex items-center justify-center rounded-xl bg-[#f5efe8] px-7 py-4 font-medium text-[#1b120a] transition hover:bg-[#253546]/90 hover:text-[#f5efe8]">
+            <a id="btnVirtualTour" href="VirtualTourCahayaVilla/index.htm" class="inline-flex items-center justify-center rounded-xl bg-[#f5efe8] px-7 py-4 font-medium text-[#1b120a] transition hover:bg-[#253546]/90 hover:text-[#f5efe8]">
               Lihat Virtual Tour
             </a>
           </div>
@@ -454,6 +454,24 @@
     const mobileMenu = document.getElementById("mobileMenu");
     menuBtn?.addEventListener("click", () => {
       mobileMenu.classList.toggle("hidden");
+    });
+
+    const btnVirtualTour = document.getElementById("btnVirtualTour");
+    btnVirtualTour?.addEventListener("click", async (e) => {
+      if (/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen().catch(() => {});
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            await document.documentElement.webkitRequestFullscreen().catch(() => {});
+          }
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock("landscape").catch(() => {});
+          }
+        } catch (err) {
+          console.log("Orientation lock info:", err);
+        }
+      }
     });
   </script>
 </body>

@@ -258,11 +258,15 @@
             if (isOVRWeb()) {
                 showPreloader();
                 loadTour();
+                forceLandscapeMode();
+                checkOrientationNotice();
                 return;
             }
 
             showPreloader();
             loadTour();
+            forceLandscapeMode();
+            checkOrientationNotice();
         }
 
         function playVideo(video) {
@@ -311,6 +315,59 @@
         function isOVRWeb() {
             return window.location.hash.substring(1).split('&').indexOf('ovrweb') > -1;
         }
+
+        async function forceLandscapeMode() {
+            if (!/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                return;
+            }
+            try {
+                if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                    await document.documentElement.requestFullscreen().catch(function () {});
+                } else if (document.documentElement.webkitRequestFullscreen && !document.webkitFullscreenElement) {
+                    await document.documentElement.webkitRequestFullscreen().catch(function () {});
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape').catch(function (e) {
+                        console.log("Orientation lock info:", e);
+                    });
+                }
+            } catch (err) {
+                console.log("Orientation lock info:", err);
+            }
+        }
+
+        var isOverlayDismissed = false;
+        function checkOrientationNotice() {
+            var overlay = document.getElementById('orientationOverlay');
+            if (!overlay || isOverlayDismissed) return;
+
+            var isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            var isPortrait = window.innerHeight > window.innerWidth || (screen.orientation && screen.orientation.type && screen.orientation.type.startsWith('portrait'));
+
+            if (isMobile && isPortrait) {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+
+        function dismissOrientationOverlay() {
+            isOverlayDismissed = true;
+            var overlay = document.getElementById('orientationOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        function handleUserTouchLock() {
+            forceLandscapeMode();
+            checkOrientationNotice();
+        }
+
+        window.addEventListener('touchstart', handleUserTouchLock, { once: true });
+        window.addEventListener('click', handleUserTouchLock, { once: true });
+        window.addEventListener('resize', checkOrientationNotice);
+        window.addEventListener('orientationchange', function () {
+            setTimeout(checkOrientationNotice, 300);
+        });
     </script>
     <style type="text/css">
         html,
@@ -381,11 +438,112 @@
                 font-size: 13px;
             }
         }
+
+        #orientationOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10001;
+            background: rgba(17, 25, 35, 0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            color: #f5efe8;
+            font-family: Roboto, Arial, sans-serif;
+        }
+
+        #orientationOverlay.active {
+            display: flex;
+        }
+
+        @media screen and (orientation: landscape) {
+            #orientationOverlay {
+                display: none !important;
+            }
+        }
+
+        .rotate-phone-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            animation: phoneRotateAnim 2.5s infinite ease-in-out;
+            color: #f5efe8;
+        }
+
+        @keyframes phoneRotateAnim {
+            0% { transform: rotate(0deg); }
+            35% { transform: rotate(-90deg); }
+            70% { transform: rotate(-90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .overlay-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #f5efe8;
+        }
+
+        .overlay-subtitle {
+            font-size: 14px;
+            color: rgba(245, 239, 232, 0.85);
+            max-width: 320px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .overlay-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background-color: #f5efe8;
+            color: #1b120a;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 24px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .overlay-btn:active {
+            transform: scale(0.96);
+        }
+
+        .overlay-dismiss-btn {
+            margin-top: 14px;
+            background: transparent;
+            border: none;
+            color: rgba(245, 239, 232, 0.6);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
     </style>
     <link rel="stylesheet" href="fonts.css?v=1784720059425">
 </head>
 
 <body onload="onLoad()">
+    <div id="orientationOverlay">
+        <svg class="rotate-phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            <path d="M18 10a6 6 0 0 1-6 6"></path>
+            <polyline points="12 16 12 12 16 12"></polyline>
+        </svg>
+        <div class="overlay-title">Miringkan HP Anda (Landscape)</div>
+        <div class="overlay-subtitle">Putar smartphone ke posisi miring untuk pengalaman Virtual Tour terbaik dan lebih luas.</div>
+        <button class="overlay-btn" onclick="forceLandscapeMode()">
+            <span>Miringkan Layar & Fullscreen</span>
+        </button>
+        <button class="overlay-dismiss-btn" onclick="dismissOrientationOverlay()">Lanjutkan dalam mode tegak</button>
+    </div>
     <a href="../index.html" class="back-to-site-btn" aria-label="Kembali ke Website">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
